@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>HMS — Patients</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg:#0f1117; --surface:#1a1d27; --surface2:#22263a; --border:#2e3248;
+    --accent:#4f8ef7; --accent2:#7c3aed; --green:#22c55e; --amber:#f59e0b;
+    --red:#ef4444; --text:#e8eaf0; --muted:#8b90a7; --font:'DM Sans',sans-serif; --serif:'DM Serif Display',serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;display:flex;}
+  .sidebar{width:220px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:24px 0;position:fixed;height:100vh;z-index:100;}
+  .logo{padding:0 24px 32px;border-bottom:1px solid var(--border);}
+  .logo-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:10px;font-size:18px;}
+  .logo h1{font-family:var(--serif);font-size:18px;}
+  .logo p{font-size:11px;color:var(--muted);margin-top:2px;}
+  .nav{padding:20px 12px;flex:1;display:flex;flex-direction:column;gap:4px;}
+  .nav a{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;color:var(--muted);text-decoration:none;font-size:14px;font-weight:500;transition:all 0.2s;}
+  .nav a:hover{background:var(--surface2);color:var(--text);}
+  .nav a.active{background:rgba(79,142,247,0.15);color:var(--accent);}
+  .nav a span.icon{font-size:16px;width:20px;text-align:center;}
+  .sidebar-bottom{padding:16px 24px;border-top:1px solid var(--border);}
+  .sidebar-bottom p{font-size:12px;color:var(--muted);}
+  .sidebar-bottom strong{color:var(--text);font-size:13px;}
+  .main{margin-left:220px;flex:1;padding:32px;min-height:100vh;}
+  .page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;}
+  .page-header h2{font-family:var(--serif);font-size:28px;}
+  .page-header p{color:var(--muted);font-size:14px;margin-top:4px;}
+  .btn{padding:10px 18px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all 0.2s;font-family:var(--font);}
+  .btn-primary{background:var(--accent);color:#fff;}
+  .btn-primary:hover{background:#3b7de8;}
+  .btn-danger{background:rgba(239,68,68,0.15);color:var(--red);border:1px solid rgba(239,68,68,0.3);}
+  .btn-danger:hover{background:rgba(239,68,68,0.25);}
+  .btn-sm{padding:5px 10px;font-size:11px;}
+
+  /* Search bar */
+  .toolbar{display:flex;gap:12px;margin-bottom:20px;align-items:center;}
+  .search-box{position:relative;flex:1;max-width:320px;}
+  .search-box input{width:100%;padding:9px 12px 9px 36px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-family:var(--font);outline:none;transition:border-color 0.2s;}
+  .search-box input:focus{border-color:var(--accent);}
+  .search-box::before{content:'🔍';position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:13px;}
+
+  /* Table card */
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+  table{width:100%;border-collapse:collapse;}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);padding:12px 16px;text-align:left;font-weight:500;background:var(--surface2);}
+  td{font-size:13px;color:var(--text);padding:12px 16px;border-top:1px solid var(--border);}
+  tr:hover td{background:rgba(255,255,255,0.02);}
+  .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500;}
+  .badge.male{background:rgba(79,142,247,0.15);color:var(--accent);}
+  .badge.female{background:rgba(124,58,237,0.15);color:#a78bfa;}
+  .badge.other{background:rgba(139,144,167,0.15);color:var(--muted);}
+  .blood{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600;background:rgba(239,68,68,0.15);color:var(--red);}
+
+  /* Modal */
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;align-items:center;justify-content:center;}
+  .modal-overlay.show{display:flex;}
+  .modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;width:480px;max-width:95vw;animation:slideUp 0.3s ease;}
+  @keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+  .modal h3{font-family:var(--serif);font-size:20px;margin-bottom:20px;}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .form-group{display:flex;flex-direction:column;gap:6px;}
+  .form-group.full{grid-column:span 2;}
+  .form-group label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;}
+  .form-group input,.form-group select{padding:9px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-family:var(--font);outline:none;transition:border-color 0.2s;}
+  .form-group input:focus,.form-group select:focus{border-color:var(--accent);}
+  .form-group select option{background:var(--surface2);}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;}
+  .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted);}
+  .btn-ghost:hover{border-color:var(--text);color:var(--text);}
+  .toast{position:fixed;bottom:24px;right:24px;background:var(--green);color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:500;z-index:999;opacity:0;transform:translateY(10px);transition:all 0.3s;}
+  .toast.show{opacity:1;transform:translateY(0);}
+  .empty-state{text-align:center;padding:48px;color:var(--muted);}
+  .empty-state div{font-size:40px;margin-bottom:12px;}
+  .avatar{width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;margin-right:8px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;}
+</style>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-icon">🏥</div>
+    <h1>MediCare HMS</h1>
+    <p>Management System</p>
+  </div>
+  <nav class="nav">
+    <a href="dashboard.html"><span class="icon">📊</span> Dashboard</a>
+    <a class="active" href="patients.html"><span class="icon">👤</span> Patients</a>
+    <a href="appointments.html"><span class="icon">📅</span> Appointments</a>
+    <a href="doctors.html"><span class="icon">🩺</span> Doctors</a>
+    <a href="billing.html"><span class="icon">💳</span> Billing</a>
+    <a href="records.html"><span class="icon">📋</span> Medical Records</a>
+    <a href="chatbot.html"><span class="icon">🤖</span> AI Assistant</a>
+  </nav>
+  <div class="sidebar-bottom"><strong>Admin User</strong><p>Hospital Admin</p></div>
+</aside>
+
+<main class="main">
+  <div class="page-header">
+    <div>
+      <h2>Patients</h2>
+      <p id="patient-count">Loading...</p>
+    </div>
+    <button class="btn btn-primary" onclick="openModal()">+ Add New Patient</button>
+  </div>
+
+  <div class="toolbar">
+    <div class="search-box">
+      <input type="text" id="search-input" placeholder="Search by name or phone..." oninput="filterPatients()"/>
+    </div>
+  </div>
+
+  <div class="card">
+    <table>
+      <thead>
+        <tr><th>#</th><th>Patient</th><th>Age</th><th>Gender</th><th>Phone</th><th>Blood</th><th>Address</th><th>Action</th></tr>
+      </thead>
+      <tbody id="patients-table">
+        <tr><td colspan="8" class="empty-state"><div>⏳</div>Loading patients...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+
+<!-- Add Patient Modal -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h3>Register New Patient</h3>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Full Name *</label>
+        <input type="text" id="f-name" placeholder="e.g. Rahul Sharma"/>
+      </div>
+      <div class="form-group">
+        <label>Age *</label>
+        <input type="number" id="f-age" placeholder="25" min="1" max="150"/>
+      </div>
+      <div class="form-group">
+        <label>Gender *</label>
+        <select id="f-gender">
+          <option value="">Select</option>
+          <option>Male</option><option>Female</option><option>Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Phone *</label>
+        <input type="text" id="f-phone" placeholder="9876543210"/>
+      </div>
+      <div class="form-group">
+        <label>Blood Group</label>
+        <select id="f-blood">
+          <option value="">Unknown</option>
+          <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
+          <option>AB+</option><option>AB-</option><option>O+</option><option>O-</option>
+        </select>
+      </div>
+      <div class="form-group full">
+        <label>Address</label>
+        <input type="text" id="f-address" placeholder="Street, City"/>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="addPatient()">Register Patient</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = 'http://localhost:3000';
+let allPatients = [];
+
+function loadPatients() {
+  fetch(`${API}/patients`)
+    .then(r => r.json())
+    .then(data => {
+      allPatients = data;
+      document.getElementById('patient-count').textContent = `${data.length} patients registered`;
+      renderTable(data);
+    });
+}
+
+function renderTable(data) {
+  const tbody = document.getElementById('patients-table');
+  if (!data.length) {
+    tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state"><div>🔍</div>No patients found</div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = data.map(p => `
+    <tr>
+      <td style="color:var(--muted)">#${p.patient_id}</td>
+      <td><span class="avatar">${p.name.charAt(0)}</span>${p.name}</td>
+      <td>${p.age}</td>
+      <td><span class="badge ${p.gender.toLowerCase()}">${p.gender}</span></td>
+      <td>${p.phone}</td>
+      <td><span class="blood">${p.blood_group || '—'}</span></td>
+      <td style="color:var(--muted);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.address || '—'}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="deletePatient(${p.patient_id}, '${p.name}')">Delete</button></td>
+    </tr>
+  `).join('');
+}
+
+function filterPatients() {
+  const q = document.getElementById('search-input').value.toLowerCase();
+  const filtered = allPatients.filter(p =>
+    p.name.toLowerCase().includes(q) || (p.phone && p.phone.includes(q))
+  );
+  renderTable(filtered);
+}
+
+function openModal() { document.getElementById('modal').classList.add('show'); }
+function closeModal() { document.getElementById('modal').classList.remove('show'); }
+
+function addPatient() {
+  const name = document.getElementById('f-name').value.trim();
+  const age = document.getElementById('f-age').value;
+  const gender = document.getElementById('f-gender').value;
+  const phone = document.getElementById('f-phone').value.trim();
+  const blood_group = document.getElementById('f-blood').value;
+  const address = document.getElementById('f-address').value.trim();
+
+  if (!name || !age || !gender || !phone) { showToast('Please fill all required fields!', 'error'); return; }
+
+  fetch(`${API}/patients`, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({name, age, gender, phone, blood_group, address})
+  })
+  .then(r => r.json())
+  .then(data => {
+    showToast(`✅ ${name} registered successfully!`);
+    closeModal();
+    document.querySelectorAll('#modal input, #modal select').forEach(el => el.value = '');
+    loadPatients();
+  })
+  .catch(() => showToast('Error adding patient!', 'error'));
+}
+
+function deletePatient(id, name) {
+  if (!confirm(`Delete patient "${name}"? This cannot be undone.`)) return;
+  fetch(`${API}/patients/${id}`, {method:'DELETE'})
+    .then(r => r.json())
+    .then(() => { showToast(`🗑 ${name} deleted.`); loadPatients(); });
+}
+
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = type === 'error' ? 'var(--red)' : 'var(--green)';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+document.getElementById('modal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+loadPatients();
+</script>
+</body>
+</html>

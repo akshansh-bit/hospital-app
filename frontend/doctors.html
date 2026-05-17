@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>HMS — Doctors</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet"/>
+<style>
+  :root{--bg:#0f1117;--surface:#1a1d27;--surface2:#22263a;--border:#2e3248;--accent:#4f8ef7;--accent2:#7c3aed;--green:#22c55e;--amber:#f59e0b;--red:#ef4444;--text:#e8eaf0;--muted:#8b90a7;--font:'DM Sans',sans-serif;--serif:'DM Serif Display',serif;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;display:flex;}
+  .sidebar{width:220px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:24px 0;position:fixed;height:100vh;}
+  .logo{padding:0 24px 32px;border-bottom:1px solid var(--border);}
+  .logo-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:10px;font-size:18px;}
+  .logo h1{font-family:var(--serif);font-size:18px;}
+  .logo p{font-size:11px;color:var(--muted);margin-top:2px;}
+  .nav{padding:20px 12px;flex:1;display:flex;flex-direction:column;gap:4px;}
+  .nav a{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;color:var(--muted);text-decoration:none;font-size:14px;font-weight:500;transition:all 0.2s;}
+  .nav a:hover{background:var(--surface2);color:var(--text);}
+  .nav a.active{background:rgba(79,142,247,0.15);color:var(--accent);}
+  .nav a span.icon{font-size:16px;width:20px;text-align:center;}
+  .sidebar-bottom{padding:16px 24px;border-top:1px solid var(--border);}
+  .sidebar-bottom p{font-size:12px;color:var(--muted);}
+  .sidebar-bottom strong{color:var(--text);font-size:13px;}
+  .main{margin-left:220px;flex:1;padding:32px;}
+  .page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;}
+  .page-header h2{font-family:var(--serif);font-size:28px;}
+  .page-header p{color:var(--muted);font-size:14px;margin-top:4px;}
+
+  /* Doctor Cards Grid */
+  .doctors-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;}
+  .doctor-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;transition:all 0.2s;position:relative;overflow:hidden;}
+  .doctor-card:hover{transform:translateY(-3px);border-color:var(--accent);box-shadow:0 8px 32px rgba(79,142,247,0.1);}
+  .doctor-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--accent2));}
+  .doc-avatar{width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:14px;font-weight:600;color:#fff;}
+  .doc-name{font-size:15px;font-weight:600;margin-bottom:4px;}
+  .doc-spec{font-size:12px;color:var(--accent);font-weight:500;margin-bottom:12px;}
+  .doc-info{display:flex;flex-direction:column;gap:6px;}
+  .doc-info-row{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);}
+  .doc-info-row span:first-child{font-size:14px;}
+  .dept-badge{display:inline-block;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:500;background:rgba(124,58,237,0.15);color:#a78bfa;margin-top:12px;}
+  .loading-grid{text-align:center;padding:64px;color:var(--muted);grid-column:1/-1;}
+</style>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="logo"><div class="logo-icon">🏥</div><h1>MediCare HMS</h1><p>Management System</p></div>
+  <nav class="nav">
+    <a href="dashboard.html"><span class="icon">📊</span> Dashboard</a>
+    <a href="patients.html"><span class="icon">👤</span> Patients</a>
+    <a href="appointments.html"><span class="icon">📅</span> Appointments</a>
+    <a class="active" href="doctors.html"><span class="icon">🩺</span> Doctors</a>
+    <a href="billing.html"><span class="icon">💳</span> Billing</a>
+    <a href="records.html"><span class="icon">📋</span> Medical Records</a>
+    <a href="chatbot.html"><span class="icon">🤖</span> AI Assistant</a>
+  </nav>
+  <div class="sidebar-bottom"><strong>Admin User</strong><p>Hospital Admin</p></div>
+</aside>
+
+<main class="main">
+  <div class="page-header">
+    <div><h2>Doctors</h2><p id="doc-count">Loading...</p></div>
+  </div>
+  <div class="doctors-grid" id="doctors-grid">
+    <div class="loading-grid">⏳ Loading doctors...</div>
+  </div>
+</main>
+
+<script>
+const API = 'http://localhost:3000';
+const avatarColors = ['🧑‍⚕️','👨‍⚕️','👩‍⚕️','🥼'];
+
+fetch(`${API}/doctors`)
+  .then(r => r.json())
+  .then(data => {
+    document.getElementById('doc-count').textContent = `${data.length} doctors on staff`;
+    const grid = document.getElementById('doctors-grid');
+    if (!data.length) { grid.innerHTML = '<div class="loading-grid">No doctors found</div>'; return; }
+    grid.innerHTML = data.map((d, i) => `
+      <div class="doctor-card">
+        <div class="doc-avatar">${d.name.charAt(0)}</div>
+        <div class="doc-name">Dr. ${d.name}</div>
+        <div class="doc-spec">${d.specialization}</div>
+        <div class="doc-info">
+          <div class="doc-info-row"><span>📞</span><span>${d.phone}</span></div>
+          ${d.email ? `<div class="doc-info-row"><span>✉️</span><span>${d.email}</span></div>` : ''}
+        </div>
+        <div class="dept-badge">🏛 ${d.dept_name}</div>
+      </div>
+    `).join('');
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>HMS — Medical Records</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet"/>
+<style>
+  :root{--bg:#0f1117;--surface:#1a1d27;--surface2:#22263a;--border:#2e3248;--accent:#4f8ef7;--accent2:#7c3aed;--green:#22c55e;--amber:#f59e0b;--red:#ef4444;--text:#e8eaf0;--muted:#8b90a7;--font:'DM Sans',sans-serif;--serif:'DM Serif Display',serif;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;display:flex;}
+  .sidebar{width:220px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:24px 0;position:fixed;height:100vh;}
+  .logo{padding:0 24px 32px;border-bottom:1px solid var(--border);}
+  .logo-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:10px;font-size:18px;}
+  .logo h1{font-family:var(--serif);font-size:18px;}
+  .logo p{font-size:11px;color:var(--muted);margin-top:2px;}
+  .nav{padding:20px 12px;flex:1;display:flex;flex-direction:column;gap:4px;}
+  .nav a{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;color:var(--muted);text-decoration:none;font-size:14px;font-weight:500;transition:all 0.2s;}
+  .nav a:hover{background:var(--surface2);color:var(--text);}
+  .nav a.active{background:rgba(79,142,247,0.15);color:var(--accent);}
+  .nav a span.icon{font-size:16px;width:20px;text-align:center;}
+  .sidebar-bottom{padding:16px 24px;border-top:1px solid var(--border);}
+  .sidebar-bottom p{font-size:12px;color:var(--muted);}
+  .sidebar-bottom strong{color:var(--text);font-size:13px;}
+  .main{margin-left:220px;flex:1;padding:32px;}
+  .page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;}
+  .page-header h2{font-family:var(--serif);font-size:28px;}
+  .page-header p{color:var(--muted);font-size:14px;margin-top:4px;}
+  .btn{padding:10px 18px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all 0.2s;font-family:var(--font);}
+  .btn-primary{background:var(--accent);color:#fff;}
+  .btn-primary:hover{background:#3b7de8;}
+
+  /* Two col layout */
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:20px;}
+  .card-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+  .card-header h3{font-size:14px;font-weight:600;}
+  .card-body{padding:20px;}
+
+  /* Form */
+  .form-group{display:flex;flex-direction:column;gap:6px;margin-bottom:16px;}
+  .form-group label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;font-weight:500;}
+  .form-group input,
+  .form-group select,
+  .form-group textarea{padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-family:var(--font);outline:none;transition:border-color 0.2s;width:100%;}
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus{border-color:var(--accent);}
+  .form-group select option{background:var(--surface2);}
+  .form-group textarea{resize:vertical;min-height:80px;line-height:1.5;}
+
+  /* Records list */
+  .record-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px;transition:border-color 0.2s;}
+  .record-card:hover{border-color:var(--accent);}
+  .record-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;}
+  .record-patient{font-size:14px;font-weight:600;}
+  .record-date{font-size:11px;color:var(--muted);background:var(--surface);padding:3px 8px;border-radius:6px;}
+  .record-doctor{font-size:12px;color:var(--accent);margin-bottom:10px;}
+  .record-section{margin-bottom:8px;}
+  .record-section-label{font-size:10px;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);margin-bottom:3px;}
+  .record-section-value{font-size:13px;color:var(--text);line-height:1.5;}
+  .divider{border:none;border-top:1px solid var(--border);margin:10px 0;}
+  .empty-state{text-align:center;padding:40px;color:var(--muted);}
+  .empty-state div{font-size:36px;margin-bottom:10px;}
+
+  /* Search */
+  .search-box{position:relative;margin-bottom:16px;}
+  .search-box input{width:100%;padding:9px 12px 9px 36px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-family:var(--font);outline:none;transition:border-color 0.2s;}
+  .search-box input:focus{border-color:var(--accent);}
+  .search-box::before{content:'🔍';position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:13px;}
+
+  /* Toast */
+  .toast{position:fixed;bottom:24px;right:24px;background:var(--green);color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:500;z-index:999;opacity:0;transform:translateY(10px);transition:all 0.3s;}
+  .toast.show{opacity:1;transform:translateY(0);}
+
+  /* Prescription tag */
+  .rx-tag{display:inline-block;background:rgba(124,58,237,0.15);color:#a78bfa;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500;margin-right:4px;margin-bottom:4px;}
+
+  /* Record count badge */
+  .count-badge{background:rgba(79,142,247,0.15);color:var(--accent);padding:3px 10px;border-radius:20px;font-size:12px;font-weight:500;}
+</style>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="logo"><div class="logo-icon">🏥</div><h1>MediCare HMS</h1><p>Management System</p></div>
+  <nav class="nav">
+    <a href="dashboard.html"><span class="icon">📊</span> Dashboard</a>
+    <a href="patients.html"><span class="icon">👤</span> Patients</a>
+    <a href="appointments.html"><span class="icon">📅</span> Appointments</a>
+    <a href="doctors.html"><span class="icon">🩺</span> Doctors</a>
+    <a href="billing.html"><span class="icon">💳</span> Billing</a>
+    <a class="active" href="records.html"><span class="icon">📋</span> Medical Records</a>
+    <a href="chatbot.html"><span class="icon">🤖</span> AI Assistant</a>
+  </nav>
+  <div class="sidebar-bottom"><strong>Admin User</strong><p>Hospital Admin</p></div>
+</aside>
+
+<main class="main">
+  <div class="page-header">
+    <div>
+      <h2>Medical Records</h2>
+      <p>Diagnosis, prescriptions and patient history</p>
+    </div>
+  </div>
+
+  <div class="two-col">
+
+    <!-- LEFT: Add New Record Form -->
+    <div>
+      <div class="card">
+        <div class="card-header">
+          <h3>➕ Add New Medical Record</h3>
+        </div>
+        <div class="card-body">
+
+          <div class="form-group">
+            <label>Select Completed Appointment *</label>
+            <select id="f-appt">
+              <option value="">Loading appointments...</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Diagnosis *</label>
+            <input type="text" id="f-diagnosis" placeholder="e.g. Hypertension, Migraine, Fever"/>
+          </div>
+
+          <div class="form-group">
+            <label>Prescription</label>
+            <textarea id="f-prescription" placeholder="e.g. Tab. Paracetamol 500mg — twice daily for 5 days&#10;Tab. Vitamin C — once daily"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label>Doctor's Notes</label>
+            <textarea id="f-notes" placeholder="Additional observations, follow-up instructions..."></textarea>
+          </div>
+
+          <button class="btn btn-primary" style="width:100%" onclick="saveRecord()">
+            💾 Save Medical Record
+          </button>
+
+          <!-- Info box -->
+          <div style="margin-top:16px;padding:12px;background:rgba(79,142,247,0.08);border:1px solid rgba(79,142,247,0.2);border-radius:8px;font-size:12px;color:var(--muted);line-height:1.6;">
+            ℹ️ Only <strong style="color:var(--accent)">Completed</strong> appointments appear here. Mark an appointment as Complete first, then add its medical record.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: All Medical Records -->
+    <div>
+      <div class="card">
+        <div class="card-header">
+          <h3>📋 All Records</h3>
+          <span class="count-badge" id="record-count">Loading...</span>
+        </div>
+        <div class="card-body" style="padding:16px">
+          <div class="search-box">
+            <input type="text" id="search-input" placeholder="Search by patient or diagnosis..." oninput="filterRecords()"/>
+          </div>
+          <div id="records-list">
+            <div class="empty-state"><div>⏳</div>Loading records...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = 'http://localhost:3000';
+let allRecords = [];
+
+// Load completed appointments for dropdown
+function loadAppointments() {
+  fetch(`${API}/appointments/completed`)
+    .then(r => r.json())
+    .then(data => {
+      const sel = document.getElementById('f-appt');
+      if (!data.length) {
+        sel.innerHTML = '<option value="">No completed appointments without records</option>';
+        return;
+      }
+      sel.innerHTML = '<option value="">Select appointment</option>';
+      data.forEach(a => {
+        sel.innerHTML += `<option value="${a.appt_id}">
+          ${a.patient_name} — Dr. ${a.doctor_name} (${a.appt_date ? a.appt_date.slice(0,10) : ''})
+        </option>`;
+      });
+    })
+    .catch(() => {
+      document.getElementById('f-appt').innerHTML = '<option value="">Error loading appointments</option>';
+    });
+}
+
+// Load all medical records
+function loadRecords() {
+  fetch(`${API}/records`)
+    .then(r => r.json())
+    .then(data => {
+      allRecords = data;
+      document.getElementById('record-count').textContent = `${data.length} records`;
+      renderRecords(data);
+    })
+    .catch(() => {
+      document.getElementById('records-list').innerHTML =
+        '<div class="empty-state"><div>❌</div>Could not load records</div>';
+    });
+}
+
+function renderRecords(data) {
+  const container = document.getElementById('records-list');
+  if (!data.length) {
+    container.innerHTML = '<div class="empty-state"><div>📋</div>No records found</div>';
+    return;
+  }
+  container.innerHTML = data.map(r => `
+    <div class="record-card">
+      <div class="record-top">
+        <div class="record-patient">👤 ${r.patient_name}</div>
+        <div class="record-date">📅 ${r.record_date ? r.record_date.slice(0,10) : '—'}</div>
+      </div>
+      <div class="record-doctor">🩺 Dr. ${r.doctor_name}</div>
+      <hr class="divider"/>
+      <div class="record-section">
+        <div class="record-section-label">Diagnosis</div>
+        <div class="record-section-value" style="color:var(--red);font-weight:500">🔴 ${r.diagnosis}</div>
+      </div>
+      ${r.prescription ? `
+      <div class="record-section" style="margin-top:8px">
+        <div class="record-section-label">Prescription 💊</div>
+        <div class="record-section-value" style="color:var(--text)">${r.prescription.replace(/\n/g, '<br>')}</div>
+      </div>` : ''}
+      ${r.notes ? `
+      <div class="record-section" style="margin-top:8px">
+        <div class="record-section-label">Doctor's Notes 📝</div>
+        <div class="record-section-value" style="color:var(--muted)">${r.notes}</div>
+      </div>` : ''}
+    </div>
+  `).join('');
+}
+
+function filterRecords() {
+  const q = document.getElementById('search-input').value.toLowerCase();
+  const filtered = allRecords.filter(r =>
+    r.patient_name.toLowerCase().includes(q) ||
+    r.diagnosis.toLowerCase().includes(q) ||
+    (r.doctor_name && r.doctor_name.toLowerCase().includes(q))
+  );
+  renderRecords(filtered);
+}
+
+function saveRecord() {
+  const appt_id      = document.getElementById('f-appt').value;
+  const diagnosis    = document.getElementById('f-diagnosis').value.trim();
+  const prescription = document.getElementById('f-prescription').value.trim();
+  const notes        = document.getElementById('f-notes').value.trim();
+
+  if (!appt_id)   { showToast('Please select an appointment!', 'error'); return; }
+  if (!diagnosis) { showToast('Please enter a diagnosis!', 'error'); return; }
+
+  fetch(`${API}/records`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ appt_id, diagnosis, prescription, notes })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.error) { showToast('Error: ' + data.error, 'error'); return; }
+    showToast('✅ Medical record saved successfully!');
+    // Clear form
+    document.getElementById('f-appt').value = '';
+    document.getElementById('f-diagnosis').value = '';
+    document.getElementById('f-prescription').value = '';
+    document.getElementById('f-notes').value = '';
+    // Reload
+    loadRecords();
+    loadAppointments();
+  })
+  .catch(() => showToast('Could not save record!', 'error'));
+}
+
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = type === 'error' ? 'var(--red)' : 'var(--green)';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// Init
+loadAppointments();
+loadRecords();
+</script>
+</body>
+</html>

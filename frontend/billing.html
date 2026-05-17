@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>HMS — Billing</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet"/>
+<style>
+  :root{--bg:#0f1117;--surface:#1a1d27;--surface2:#22263a;--border:#2e3248;--accent:#4f8ef7;--accent2:#7c3aed;--green:#22c55e;--amber:#f59e0b;--red:#ef4444;--text:#e8eaf0;--muted:#8b90a7;--font:'DM Sans',sans-serif;--serif:'DM Serif Display',serif;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;display:flex;}
+  .sidebar{width:220px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:24px 0;position:fixed;height:100vh;}
+  .logo{padding:0 24px 32px;border-bottom:1px solid var(--border);}
+  .logo-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:10px;font-size:18px;}
+  .logo h1{font-family:var(--serif);font-size:18px;}
+  .logo p{font-size:11px;color:var(--muted);margin-top:2px;}
+  .nav{padding:20px 12px;flex:1;display:flex;flex-direction:column;gap:4px;}
+  .nav a{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;color:var(--muted);text-decoration:none;font-size:14px;font-weight:500;transition:all 0.2s;}
+  .nav a:hover{background:var(--surface2);color:var(--text);}
+  .nav a.active{background:rgba(79,142,247,0.15);color:var(--accent);}
+  .nav a span.icon{font-size:16px;width:20px;text-align:center;}
+  .sidebar-bottom{padding:16px 24px;border-top:1px solid var(--border);}
+  .sidebar-bottom p{font-size:12px;color:var(--muted);}
+  .sidebar-bottom strong{color:var(--text);font-size:13px;}
+  .main{margin-left:220px;flex:1;padding:32px;}
+  .page-header{margin-bottom:28px;}
+  .page-header h2{font-family:var(--serif);font-size:28px;}
+  .page-header p{color:var(--muted);font-size:14px;margin-top:4px;}
+
+  /* Summary cards */
+  .summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px;}
+  .sum-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;}
+  .sum-card .label{font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);margin-bottom:8px;}
+  .sum-card .value{font-size:26px;font-weight:600;}
+  .sum-card.pending .value{color:var(--amber);}
+  .sum-card.paid .value{color:var(--green);}
+  .sum-card.total .value{color:var(--accent);}
+
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+  .card-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+  .card-header h3{font-size:14px;font-weight:600;}
+  table{width:100%;border-collapse:collapse;}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);padding:12px 16px;text-align:left;font-weight:500;background:var(--surface2);}
+  td{font-size:13px;color:var(--text);padding:12px 16px;border-top:1px solid var(--border);}
+  tr:hover td{background:rgba(255,255,255,0.02);}
+  .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500;}
+  .badge.pending{background:rgba(245,158,11,0.15);color:var(--amber);}
+  .badge.paid{background:rgba(34,197,94,0.15);color:var(--green);}
+  .badge.waived{background:rgba(139,144,167,0.15);color:var(--muted);}
+  .btn{padding:6px 14px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;border:none;transition:all 0.2s;font-family:var(--font);}
+  .btn-pay{background:var(--green);color:#fff;}
+  .btn-pay:hover{background:#16a34a;}
+
+  /* Pay modal */
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;align-items:center;justify-content:center;}
+  .modal-overlay.show{display:flex;}
+  .modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;width:380px;max-width:95vw;animation:slideUp 0.3s ease;}
+  @keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+  .modal h3{font-family:var(--serif);font-size:20px;margin-bottom:6px;}
+  .modal p{color:var(--muted);font-size:13px;margin-bottom:20px;}
+  .bill-summary{background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:20px;}
+  .bill-row{display:flex;justify-content:space-between;font-size:13px;padding:4px 0;}
+  .bill-row.total{border-top:1px solid var(--border);margin-top:8px;padding-top:12px;font-weight:600;font-size:15px;}
+  .bill-row.total span:last-child{color:var(--amber);}
+  .form-group{display:flex;flex-direction:column;gap:6px;margin-bottom:16px;}
+  .form-group label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;}
+  .form-group select{padding:9px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-family:var(--font);outline:none;}
+  .form-group select:focus{border-color:var(--accent);}
+  .form-group select option{background:var(--surface2);}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;}
+  .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted);padding:8px 16px;border-radius:8px;cursor:pointer;font-family:var(--font);font-size:13px;}
+  .btn-confirm{background:var(--green);color:#fff;padding:8px 16px;border-radius:8px;cursor:pointer;border:none;font-family:var(--font);font-size:13px;font-weight:500;}
+  .toast{position:fixed;bottom:24px;right:24px;background:var(--green);color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:500;z-index:999;opacity:0;transform:translateY(10px);transition:all 0.3s;}
+  .toast.show{opacity:1;transform:translateY(0);}
+  .filter-tabs{display:flex;gap:8px;margin-bottom:16px;}
+  .filter-tab{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:var(--font);transition:all 0.2s;}
+  .filter-tab.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+</style>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="logo"><div class="logo-icon">🏥</div><h1>MediCare HMS</h1><p>Management System</p></div>
+  <nav class="nav">
+    <a href="dashboard.html"><span class="icon">📊</span> Dashboard</a>
+    <a href="patients.html"><span class="icon">👤</span> Patients</a>
+    <a href="appointments.html"><span class="icon">📅</span> Appointments</a>
+    <a href="doctors.html"><span class="icon">🩺</span> Doctors</a>
+    <a class="active" href="billing.html"><span class="icon">💳</span> Billing</a>
+    <a href="records.html"><span class="icon">📋</span> Medical Records</a>
+    <a href="chatbot.html"><span class="icon">🤖</span> AI Assistant</a>
+  </nav>
+  <div class="sidebar-bottom"><strong>Admin User</strong><p>Hospital Admin</p></div>
+</aside>
+
+<main class="main">
+  <div class="page-header">
+    <h2>Billing</h2>
+    <p>Manage patient invoices and payments</p>
+  </div>
+
+  <div class="summary-grid">
+    <div class="sum-card total">
+      <div class="label">Total Billed</div>
+      <div class="value" id="sum-total">—</div>
+    </div>
+    <div class="sum-card paid">
+      <div class="label">Amount Collected</div>
+      <div class="value" id="sum-paid">—</div>
+    </div>
+    <div class="sum-card pending">
+      <div class="label">Pending Amount</div>
+      <div class="value" id="sum-pending">—</div>
+    </div>
+  </div>
+
+  <div class="filter-tabs">
+    <button class="filter-tab active" onclick="filterBills('all',this)">All Bills</button>
+    <button class="filter-tab" onclick="filterBills('Pending',this)">Pending</button>
+    <button class="filter-tab" onclick="filterBills('Paid',this)">Paid</button>
+  </div>
+
+  <div class="card">
+    <table>
+      <thead><tr><th>Bill #</th><th>Patient</th><th>Amount</th><th>Date</th><th>Payment Mode</th><th>Status</th><th>Action</th></tr></thead>
+      <tbody id="bills-table"><tr><td colspan="7" style="text-align:center;padding:32px;color:var(--muted)">Loading...</td></tr></tbody>
+    </table>
+  </div>
+</main>
+
+<!-- Pay Modal -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h3>Collect Payment</h3>
+    <p>Select payment mode to confirm</p>
+    <div class="bill-summary" id="modal-summary"></div>
+    <div class="form-group">
+      <label>Payment Mode *</label>
+      <select id="pay-mode">
+        <option value="Cash">Cash</option>
+        <option value="UPI">UPI</option>
+        <option value="Card">Card</option>
+        <option value="Insurance">Insurance</option>
+        <option value="Bank Transfer">Bank Transfer</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn-confirm" onclick="confirmPayment()">✅ Confirm Payment</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = 'http://localhost:3000';
+let allBills = [];
+let activeBillId = null;
+
+function loadBills() {
+  fetch(`${API}/billing`)
+    .then(r => r.json())
+    .then(data => {
+      allBills = data;
+      // Summary
+      const total   = data.reduce((s,b) => s + parseFloat(b.total_amount), 0);
+      const paid    = data.filter(b=>b.payment_status==='Paid').reduce((s,b)=>s+parseFloat(b.total_amount),0);
+      const pending = data.filter(b=>b.payment_status==='Pending').reduce((s,b)=>s+parseFloat(b.total_amount),0);
+      document.getElementById('sum-total').textContent   = '₹' + total.toLocaleString('en-IN');
+      document.getElementById('sum-paid').textContent    = '₹' + paid.toLocaleString('en-IN');
+      document.getElementById('sum-pending').textContent = '₹' + pending.toLocaleString('en-IN');
+      renderTable(data);
+    });
+}
+
+function renderTable(data) {
+  const tbody = document.getElementById('bills-table');
+  if (!data.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--muted)">No bills found</td></tr>';
+    return;
+  }
+  tbody.innerHTML = data.map(b => `
+    <tr>
+      <td style="color:var(--muted)">#${b.bill_id}</td>
+      <td><strong>${b.patient_name}</strong></td>
+      <td style="font-weight:600;color:${b.payment_status==='Paid'?'var(--green)':'var(--amber)'}">₹${parseFloat(b.total_amount).toLocaleString('en-IN')}</td>
+      <td style="color:var(--muted)">${b.bill_date ? b.bill_date.slice(0,10) : '—'}</td>
+      <td style="color:var(--muted)">${b.payment_mode || '—'}</td>
+      <td><span class="badge ${b.payment_status.toLowerCase()}">${b.payment_status}</span></td>
+      <td>
+        ${b.payment_status === 'Pending'
+            ? `<button class="btn btn-pay" onclick="openPayModal(${b.bill_id},'${b.patient_name}',${b.total_amount})">💰 Collect</button>`
+            : `<div style="display:flex;gap:6px;align-items:center">
+                <button class="btn btn-sm" style="background:rgba(79,142,247,0.15);color:var(--accent);border:1px solid rgba(79,142,247,0.3)" onclick="printBill(${b.bill_id},'${b.patient_name}',${b.total_amount},'${b.bill_date}')">🖨️ Print</button>
+                <span style="color:var(--muted);font-size:12px">✓ Done</span>
+              </div>`
+          }
+          
+      </td>
+    </tr>
+  `).join('');
+}
+
+function filterBills(status, btn) {
+  document.querySelectorAll('.filter-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const filtered = status === 'all' ? allBills : allBills.filter(b=>b.payment_status===status);
+  renderTable(filtered);
+}
+
+function openPayModal(id, name, amount) {
+  activeBillId = id;
+  document.getElementById('modal-summary').innerHTML = `
+    <div class="bill-row"><span>Patient</span><span>${name}</span></div>
+    <div class="bill-row"><span>Bill #</span><span>${id}</span></div>
+    <div class="bill-row total"><span>Amount Due</span><span>₹${parseFloat(amount).toLocaleString('en-IN')}</span></div>
+  `;
+  document.getElementById('modal').classList.add('show');
+}
+
+function closeModal() { document.getElementById('modal').classList.remove('show'); activeBillId = null; }
+
+function confirmPayment() {
+  const mode = document.getElementById('pay-mode').value;
+  fetch(`${API}/billing/${activeBillId}/pay`, {
+    method:'PUT', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({payment_mode: mode})
+  }).then(r=>r.json()).then(() => {
+    showToast(`✅ Payment collected via ${mode}!`);
+    closeModal();
+    loadBills();
+  });
+}
+
+
+function printBill(id, name, amount, date) {
+  const printWindow = window.open('', '_blank');
+  printWindow.document.write(`
+    <html>
+    <head>
+      <title>Bill #${id}</title>
+      <style>
+        body { font-family: Arial, sans-serif; padding: 40px; color: #333; }
+        .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 30px; }
+        .header h1 { font-size: 28px; margin-bottom: 4px; }
+        .header p { color: #666; font-size: 14px; }
+        .bill-info { margin-bottom: 30px; }
+        .bill-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; font-size: 15px; }
+        .bill-row.total { font-weight: bold; font-size: 18px; border-top: 2px solid #333; border-bottom: none; margin-top: 10px; }
+        .footer { text-align: center; margin-top: 40px; color: #999; font-size: 13px; }
+        .paid-stamp { text-align: center; margin: 20px 0; }
+        .paid-stamp span { border: 3px solid green; color: green; padding: 8px 24px; font-size: 22px; font-weight: bold; border-radius: 6px; letter-spacing: 2px; }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>🏥 MediCare HMS</h1>
+        <p>Hospital Management System</p>
+        <p>Bill Receipt</p>
+      </div>
+      <div class="bill-info">
+        <div class="bill-row"><span>Bill ID</span><span>#${id}</span></div>
+        <div class="bill-row"><span>Patient Name</span><span>${name}</span></div>
+        <div class="bill-row"><span>Bill Date</span><span>${date ? date.slice(0,10) : 'N/A'}</span></div>
+        <div class="bill-row"><span>Payment Status</span><span style="color:green">✓ PAID</span></div>
+        <div class="bill-row total"><span>Total Amount</span><span>₹${parseFloat(amount).toLocaleString('en-IN')}</span></div>
+      </div>
+      <div class="paid-stamp">
+        <span>✓ PAID</span>
+      </div>
+      <div class="footer">
+        <p>Thank you for choosing MediCare HMS</p>
+        <p>This is a computer generated receipt</p>
+      </div>
+    </body>
+    </html>
+  `);
+  printWindow.document.close();
+  printWindow.print();
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 3000);
+}
+
+document.getElementById('modal').addEventListener('click', function(e){ if(e.target===this)closeModal(); });
+loadBills();
+</script>
+</body>
+</html>

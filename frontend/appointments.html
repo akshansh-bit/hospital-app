@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>HMS — Appointments</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet"/>
+<style>
+  :root{--bg:#0f1117;--surface:#1a1d27;--surface2:#22263a;--border:#2e3248;--accent:#4f8ef7;--accent2:#7c3aed;--green:#22c55e;--amber:#f59e0b;--red:#ef4444;--text:#e8eaf0;--muted:#8b90a7;--font:'DM Sans',sans-serif;--serif:'DM Serif Display',serif;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;display:flex;}
+  .sidebar{width:220px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:24px 0;position:fixed;height:100vh;}
+  .logo{padding:0 24px 32px;border-bottom:1px solid var(--border);}
+  .logo-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:10px;font-size:18px;}
+  .logo h1{font-family:var(--serif);font-size:18px;}
+  .logo p{font-size:11px;color:var(--muted);margin-top:2px;}
+  .nav{padding:20px 12px;flex:1;display:flex;flex-direction:column;gap:4px;}
+  .nav a{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;color:var(--muted);text-decoration:none;font-size:14px;font-weight:500;transition:all 0.2s;}
+  .nav a:hover{background:var(--surface2);color:var(--text);}
+  .nav a.active{background:rgba(79,142,247,0.15);color:var(--accent);}
+  .nav a span.icon{font-size:16px;width:20px;text-align:center;}
+  .sidebar-bottom{padding:16px 24px;border-top:1px solid var(--border);}
+  .sidebar-bottom p{font-size:12px;color:var(--muted);}
+  .sidebar-bottom strong{color:var(--text);font-size:13px;}
+  .main{margin-left:220px;flex:1;padding:32px;}
+  .page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;}
+  .page-header h2{font-family:var(--serif);font-size:28px;}
+  .page-header p{color:var(--muted);font-size:14px;margin-top:4px;}
+  .btn{padding:10px 18px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all 0.2s;font-family:var(--font);}
+  .btn-primary{background:var(--accent);color:#fff;}
+  .btn-primary:hover{background:#3b7de8;}
+  .btn-sm{padding:5px 10px;font-size:11px;}
+  .btn-green{background:rgba(34,197,94,0.15);color:var(--green);border:1px solid rgba(34,197,94,0.3);}
+  .btn-red{background:rgba(239,68,68,0.15);color:var(--red);border:1px solid rgba(239,68,68,0.3);}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:24px;}
+  .card-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+  .card-header h3{font-size:14px;font-weight:600;}
+  table{width:100%;border-collapse:collapse;}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);padding:12px 16px;text-align:left;font-weight:500;background:var(--surface2);}
+  td{font-size:13px;color:var(--text);padding:12px 16px;border-top:1px solid var(--border);}
+  tr:hover td{background:rgba(255,255,255,0.02);}
+  .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500;}
+  .badge.scheduled{background:rgba(79,142,247,0.15);color:var(--accent);}
+  .badge.completed{background:rgba(34,197,94,0.15);color:var(--green);}
+  .badge.cancelled{background:rgba(239,68,68,0.15);color:var(--red);}
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;align-items:center;justify-content:center;}
+  .modal-overlay.show{display:flex;}
+  .modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;width:480px;max-width:95vw;animation:slideUp 0.3s ease;}
+  @keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+  .modal h3{font-family:var(--serif);font-size:20px;margin-bottom:20px;}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .form-group{display:flex;flex-direction:column;gap:6px;}
+  .form-group.full{grid-column:span 2;}
+  .form-group label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;}
+  .form-group input,.form-group select{padding:9px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-family:var(--font);outline:none;transition:border-color 0.2s;}
+  .form-group input:focus,.form-group select:focus{border-color:var(--accent);}
+  .form-group select option{background:var(--surface2);}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;}
+  .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted);}
+  .btn-ghost:hover{border-color:var(--text);color:var(--text);}
+  .toast{position:fixed;bottom:24px;right:24px;background:var(--green);color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:500;z-index:999;opacity:0;transform:translateY(10px);transition:all 0.3s;}
+  .toast.show{opacity:1;transform:translateY(0);}
+  .filter-tabs{display:flex;gap:8px;margin-bottom:16px;}
+  .filter-tab{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:var(--font);transition:all 0.2s;}
+  .filter-tab.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .action-btns{display:flex;gap:6px;}
+</style>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="logo"><div class="logo-icon">🏥</div><h1>MediCare HMS</h1><p>Management System</p></div>
+  <nav class="nav">
+    <a href="dashboard.html"><span class="icon">📊</span> Dashboard</a>
+    <a href="patients.html"><span class="icon">👤</span> Patients</a>
+    <a class="active" href="appointments.html"><span class="icon">📅</span> Appointments</a>
+    <a href="doctors.html"><span class="icon">🩺</span> Doctors</a>
+    <a href="billing.html"><span class="icon">💳</span> Billing</a>
+    <a href="records.html"><span class="icon">📋</span> Medical Records</a>
+    <a href="chatbot.html"><span class="icon">🤖</span> AI Assistant</a>
+  </nav>
+  <div class="sidebar-bottom"><strong>Admin User</strong><p>Hospital Admin</p></div>
+</aside>
+
+<main class="main">
+  <div class="page-header">
+    <div><h2>Appointments</h2><p id="appt-count">Loading...</p></div>
+    <button class="btn btn-primary" onclick="openModal()">+ Book Appointment</button>
+  </div>
+
+  <div class="filter-tabs">
+    <button class="filter-tab active" onclick="filterByStatus('all', this)">All</button>
+    <button class="filter-tab" onclick="filterByStatus('Scheduled', this)">Scheduled</button>
+    <button class="filter-tab" onclick="filterByStatus('Completed', this)">Completed</button>
+    <button class="filter-tab" onclick="filterByStatus('Cancelled', this)">Cancelled</button>
+  </div>
+
+  <div class="card">
+    <table>
+      <thead><tr><th>#</th><th>Patient</th><th>Doctor</th><th>Specialization</th><th>Date</th><th>Time</th><th>Reason</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody id="appts-table"><tr><td colspan="9" style="text-align:center;padding:32px;color:var(--muted)">Loading...</td></tr></tbody>
+    </table>
+  </div>
+</main>
+
+<!-- Book Appointment Modal -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h3>Book Appointment</h3>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Patient *</label>
+        <select id="f-patient"><option value="">Select patient</option></select>
+      </div>
+      <div class="form-group full">
+        <label>Doctor *</label>
+        <select id="f-doctor"><option value="">Select doctor</option></select>
+      </div>
+      <div class="form-group">
+        <label>Date *</label>
+        <input type="date" id="f-date"/>
+      </div>
+      <div class="form-group">
+        <label>Time *</label>
+        <input type="time" id="f-time"/>
+      </div>
+      <div class="form-group full">
+        <label>Reason for Visit</label>
+        <input type="text" id="f-reason" placeholder="e.g. Chest pain, routine checkup"/>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="bookAppointment()">Book Appointment</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = 'http://localhost:3000';
+let allAppts = [];
+
+// Set today as default date
+document.getElementById('f-date').valueAsDate = new Date();
+
+function loadAppointments() {
+  fetch(`${API}/appointments`)
+    .then(r => r.json())
+    .then(data => {
+      allAppts = data;
+      document.getElementById('appt-count').textContent = `${data.length} total appointments`;
+      renderTable(data);
+    });
+}
+
+function renderTable(data) {
+  const tbody = document.getElementById('appts-table');
+  if (!data.length) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--muted)">No appointments found</td></tr>';
+    return;
+  }
+  tbody.innerHTML = data.map(a => `
+    <tr>
+      <td style="color:var(--muted)">#${a.appt_id}</td>
+      <td><strong>${a.patient_name}</strong><br><span style="color:var(--muted);font-size:11px">${a.patient_phone}</span></td>
+      <td>${a.doctor_name}</td>
+      <td style="color:var(--muted)">${a.specialization}</td>
+      <td>${a.appt_date ? a.appt_date.slice(0,10) : '—'}</td>
+      <td>${a.appt_time || '—'}</td>
+      <td style="color:var(--muted);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.reason || '—'}</td>
+      <td><span class="badge ${a.status.toLowerCase()}">${a.status}</span></td>
+      <td>
+        ${a.status === 'Scheduled' ? `
+        <div class="action-btns">
+          <button class="btn btn-green btn-sm" onclick="updateStatus(${a.appt_id},'Completed')">✓ Done</button>
+          <button class="btn btn-red btn-sm" onclick="updateStatus(${a.appt_id},'Cancelled')">✕</button>
+        </div>` : '<span style="color:var(--muted);font-size:11px">—</span>'}
+      </td>
+    </tr>
+  `).join('');
+}
+
+function filterByStatus(status, btn) {
+  document.querySelectorAll('.filter-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const filtered = status === 'all' ? allAppts : allAppts.filter(a => a.status === status);
+  renderTable(filtered);
+}
+
+function loadDropdowns() {
+  fetch(`${API}/patients`).then(r=>r.json()).then(data => {
+    const sel = document.getElementById('f-patient');
+    data.forEach(p => sel.innerHTML += `<option value="${p.patient_id}">${p.name} (${p.phone})</option>`);
+  });
+  fetch(`${API}/doctors`).then(r=>r.json()).then(data => {
+    const sel = document.getElementById('f-doctor');
+    data.forEach(d => sel.innerHTML += `<option value="${d.doctor_id}">Dr. ${d.name} — ${d.specialization}</option>`);
+  });
+}
+
+function openModal() { document.getElementById('modal').classList.add('show'); }
+function closeModal() { document.getElementById('modal').classList.remove('show'); }
+
+function bookAppointment() {
+  const patient_id = document.getElementById('f-patient').value;
+  const doctor_id  = document.getElementById('f-doctor').value;
+  const appt_date  = document.getElementById('f-date').value;
+  const appt_time  = document.getElementById('f-time').value;
+  const reason     = document.getElementById('f-reason').value;
+  if (!patient_id || !doctor_id || !appt_date || !appt_time) { showToast('Fill all required fields!', 'error'); return; }
+  fetch(`${API}/appointments`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({patient_id, doctor_id, appt_date, appt_time, reason})
+  }).then(r=>r.json()).then(() => {
+    showToast('✅ Appointment booked!');
+    closeModal();
+    loadAppointments();
+  });
+}
+
+function updateStatus(id, status) {
+  const msg = status === 'Completed'
+    ? 'Mark as Completed? This will auto-generate a bill via trigger!'
+    : 'Cancel this appointment?';
+  if (!confirm(msg)) return;
+  fetch(`${API}/appointments/${id}/status`, {
+    method:'PUT', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({status})
+  }).then(r=>r.json()).then(() => {
+    showToast(status === 'Completed' ? '✅ Completed! Bill auto-created.' : '🗑 Appointment cancelled.');
+    loadAppointments();
+  });
+}
+
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = type === 'error' ? 'var(--red)' : 'var(--green)';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+document.getElementById('modal').addEventListener('click', function(e){ if(e.target===this)closeModal(); });
+loadAppointments();
+loadDropdowns();
+</script>
+</body>
+</html>
