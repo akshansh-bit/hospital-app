@@ -9,28 +9,36 @@ const mysql   = require('mysql2');
 const cors    = require('cors');
 
 const app  = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || '*'
+}));
 app.use(express.json());
 
 // =============================================
-// DATABASE CONNECTION
+// DATABASE CONNECTION (POOL)
 // =============================================
-const db = mysql.createConnection({
-  host     : 'localhost',
-  user     : 'root',
-  password : '',          // XAMPP ka default password blank hota hai
-  database : 'hospital_db'
+const db = mysql.createPool({
+  host     : process.env.DB_HOST,
+  port     : process.env.DB_PORT || 3306,
+  user     : process.env.DB_USER,
+  password : process.env.DB_PASSWORD,
+  database : process.env.DB_NAME,
+  ssl      : process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
 });
 
-db.connect((err) => {
+db.getConnection((err, connection) => {
   if (err) {
     console.log('❌ Database connection failed:', err.message);
     return;
   }
-  console.log('✅ Connected to hospital_db successfully!');
+  console.log('✅ Connected to', process.env.DB_NAME, 'successfully!');
+  connection.release();
 });
 
 // =============================================
@@ -383,6 +391,5 @@ app.post('/ai/chat', async (req, res) => {
 // START SERVER
 // =============================================
 app.listen(PORT, () => {
-  console.log(`🏥 Hospital server running at http://localhost:${PORT}`);
-  console.log(`📋 Test it: http://localhost:${PORT}/patients`);
+  console.log(`🏥 Hospital server running on port ${PORT}`);
 });
