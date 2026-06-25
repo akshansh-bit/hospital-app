@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>HMS — Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet"/>
-
+<script src="config.js"></script>
 <style>
   :root {
     --bg: #0f1117;
@@ -278,7 +278,6 @@
 </main>
 
 <script>
-const API = 'http://localhost:3000';
 
 // Set today's date
 const now = new Date();
@@ -359,7 +358,7 @@ fetch(`${API}/billing/pending`)
 // =============================================
 
 // Fetch appointments for bar chart
-fetch('http://localhost:3000/appointments')
+fetch(`${API}/appointments`)
   .then(r => r.json())
   .then(data => {
     // Count by day of week
@@ -396,7 +395,7 @@ fetch('http://localhost:3000/appointments')
   });
 
 // Fetch billing for pie chart
-fetch('http://localhost:3000/billing')
+fetch(`${API}/billing`)
   .then(r => r.json())
   .then(data => {
     const paid    = data.filter(b => b.payment_status === 'Paid').length;
